@@ -1,0 +1,56 @@
+.chatMessage :global {
+  position: relative;
+  display: flex;
+  align-items: left;
+  padding-right: 50px;
+  margin: 5px 0;
+
+  .bubble-container {
+    background-color: white;
+    position: relative;
+    box-shadow: 0px 1px 4px -1px black;
+    border: 1px solid #e6e6e6;
+    border-radius: 6px;
+  }
+
+  .bubble {
+    background-color: white;
+    border-radius: 6px;
+    box-sizing: border-box;
+    position: relative;
+    white-space: pre-line;
+
+    padding: 4px 10px;
+    line-height: 24px;
+    letter-spacing: 0.16px;
+    min-width: 50px;
+
+    z-index: 1;
+  }
+
+  .bubble-arrow {
+    display: block;
+    position: absolute;
+    width: 20px;
+    height: 24px;
+    background: white;
+    box-shadow: 0px 2px 4px -2px black;
+    border: 1px solid #e6e6e6;
+
+    top: -1px;
+    left: -2px;
+    transform: skew(45deg);
+  }
+}
+
+.chatMessage:global.right-aligned {
+  align-items: right;
+  padding-left: 50px;
+  padding-right: 0;
+
+  .bubble-arrow {
+    transform: skew(-45deg);
+    left: initial;
+    right: -2px;
+  }
+}

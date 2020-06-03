@@ -1,0 +1,106 @@
+@import "src/styles/variables";
+
+.settingsContent {
+  flex: 1 1 0;
+  overflow-x: hidden;
+  overflow-y: overlay;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+
+  padding: 24px;
+  margin: auto;
+  max-width: 480px;
+  width: 100%;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.16px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    background-color: #616161;
+  }
+
+  :global {
+    section {
+      margin-bottom: 24px;
+    }
+
+    label {
+      font-weight: 500;
+      color: #434450;
+      line-height: 20px;
+      display: inline-block;
+      margin-bottom: 6px;
+
+      &.radio {
+        width: 100px;
+        margin-bottom: 0;
+        font-weight: normal;
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+
+    input[type="text"],
+    select {
+      box-sizing: border-box;
+      outline: none;
+      border: none;
+      box-shadow: 0px 1px 5px -1px black;
+      padding: 8px 12px;
+      display: block;
+    }
+
+    input[type="text"] {
+      width: 100%;
+    }
+
+    select {
+      width: 150px;
+    }
+
+    input[type="radio"] {
+      margin: 0;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    .settings-spacer {
+      flex: 1 1 auto;
+    }
+
+    button {
+      appearance: none;
+      outline: none;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      user-select: none;
+
+      background: $primary;
+      color: white;
+      padding: 12px 20px;
+      align-self: center;
+
+      &:focus {
+        background: scale-color($primary, $lightness: -5%);
+      }
+
+      &:hover {
+        background: scale-color($primary, $lightness: 10%);
+      }
+
+      &:active {
+        background: scale-color($primary, $lightness: 20%);
+      }
+
+      img {
+        width: 36px;
+        height: 36px;
+        pointer-events: none;
+      }
+    }
+  }
+}

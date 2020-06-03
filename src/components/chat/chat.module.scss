@@ -1,0 +1,75 @@
+.chatContent {
+  flex: 1 1 0;
+  margin: 0;
+
+  overflow-x: hidden;
+  overflow-y: overlay;
+
+  padding: 20px 30px;
+
+  background: linear-gradient(rgba(255, 255, 255, 0), #d5d5d5 10%, #d5d5d5);
+  background: linear-gradient(rgb(193, 193, 193), #dfdfdf 10%, #efefef);
+  box-shadow: 0px 1px 5px -2px black inset;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    background-color: #616161;
+  }
+}
+
+.chatInputSection :global {
+  display: flex;
+  flex-direction: row;
+  flex: 0 0 auto;
+  padding: 10px;
+  box-shadow: 0px 7px 12px 2px black;
+
+  textarea {
+    flex: 1 1 0;
+    padding: 10px 16px;
+    margin-right: 10px;
+
+    font-size: 20px;
+    letter-spacing: 0.16px;
+    line-height: 24px;
+
+    box-sizing: border-box;
+    outline: none;
+    resize: none;
+    overflow-y: overlay;
+    min-height: initial;
+    max-height: 100px;
+
+    border-radius: 5px;
+    border: none;
+    box-shadow: 0 1px 5px -1px black;
+  }
+
+  button {
+    appearance: none;
+    outline: none;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    user-select: none;
+
+    &:focus {
+      background: rgba(#000000, 0.05);
+    }
+
+    &:hover {
+      background: rgba(#000000, 0.1);
+    }
+
+    &:active {
+      background: rgba(#000000, 0.2);
+    }
+
+    img {
+      width: 36px;
+      height: 36px;
+      pointer-events: none;
+    }
+  }
+}
