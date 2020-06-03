@@ -1,0 +1,35 @@
+.nav :global {
+  background: white;
+  box-shadow: 0 2px 6px -2px black;
+  position: relative;
+  z-index: 10;
+
+  a {
+    box-sizing: border-box;
+    display: inline-block;
+    font-size: 24px;
+    margin: 0 10px;
+
+    display: inline-block;
+    padding: 12px 20px;
+    color: black;
+    text-decoration: none;
+    width: 150px;
+    text-align: center;
+
+    &.active {
+      background: #a0a0a0;
+    }
+
+    @media only screen and (max-width: 360px) {
+      width: auto;
+    }
+  }
+}
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
