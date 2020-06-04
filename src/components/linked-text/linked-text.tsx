@@ -13,8 +13,6 @@ export default function LinkedText({ text }: { text: string }) {
   let toParse = text;
   const links = anchorme.list(text);
 
-  console.log(links);
-
   let prevLink: ListingProps = null as any;
   for (const link of links) {
     const prevText = text.substring(prevLink?.end || 0, link.start);

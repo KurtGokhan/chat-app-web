@@ -27,11 +27,11 @@ export default function Settings() {
         <div>
           <label className="radio">
             <input type="radio" name="theme" {...bindRadio('theme', 'light')} />
-            Light
+            <span>Light</span>
           </label>
           <label className="radio">
             <input type="radio" name="theme" {...bindRadio('theme', 'dark')} />
-            Dark
+            <span>Dark</span>
           </label>
         </div>
       </section>
@@ -42,11 +42,11 @@ export default function Settings() {
         <div>
           <label className="radio">
             <input type="radio" name="clock" {...bindRadio('clock24Hours', false)} />
-            12 Hours
+            <span>12 Hours</span>
           </label>
           <label className="radio">
             <input type="radio" name="clock" {...bindRadio('clock24Hours', true)} />
-            24 Hours
+            <span>24 Hours</span>
           </label>
         </div>
       </section>
@@ -57,11 +57,11 @@ export default function Settings() {
         <div>
           <label className="radio">
             <input type="radio" name="send" {...bindRadio('sendOnCtrlEnter', true)} />
-            On
+            <span>On</span>
           </label>
           <label className="radio">
             <input type="radio" name="send" {...bindRadio('sendOnCtrlEnter', false)} />
-            Off
+            <span>Off</span>
           </label>
         </div>
       </section>

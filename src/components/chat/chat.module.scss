@@ -1,3 +1,9 @@
+$st1: #dcdcdc;
+$st2: #d6d6d6;
+
+$dst1: #232935;
+$dst2: #252c38;
+
 .chatContent {
   flex: 1 1 0;
   margin: 0;
@@ -12,8 +18,11 @@
   padding: 20px 30px;
   padding-right: 36px;
 
-  background: #dcdcdc;
   box-shadow: 0px 1px 5px -2px black inset;
+
+  background: #dcdcdc;
+  background: linear-gradient(45deg, $st1 25%, $st2 25%, $st2 50%, $st1 50%, $st1 75%, $st2 75%);
+  background-size: 50px 50px;
 
   ul {
     margin: 0;
@@ -22,6 +31,8 @@
 
   :global(.app-root.dark) & {
     background: #232935;
+    background: linear-gradient(45deg, $dst1 25%, $dst2 25%, $dst2 50%, $dst1 50%, $dst1 75%, $dst2 75%);
+    background-size: 50px 50px;
   }
 }
 
@@ -33,6 +44,11 @@
   padding: 10px;
   box-shadow: 0px 7px 12px 2px black;
   border-top: 1px solid transparent;
+  background: #e7e7e7;
+
+  :global(.app-root.dark) & {
+    background: #232935;
+  }
 
   textarea {
     flex: 1 1 0;
@@ -54,7 +70,7 @@
 
     border-radius: 5px;
     border: none;
-    box-shadow: 0 1px 5px -1px black;
+    box-shadow: 0 1px 7px -1px black;
   }
 
   button {

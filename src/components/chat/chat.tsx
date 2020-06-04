@@ -73,7 +73,7 @@ export default function Chat() {
     </div>
 
     <div className={styles.chatInputSection}>
-      <textarea placeholder="Enter message" rows={1} onInput={onInput} ref={textRef} onSubmit={onSubmit} onKeyDown={onKey} />
+      <textarea placeholder="Enter message" rows={1} onInput={onInput} ref={textRef} onSubmit={onSubmit} onKeyDown={onKey} autoFocus />
 
       <button onClick={onSubmit}>
         <img src={sendIcon} alt="Send" />
