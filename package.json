@@ -3,6 +3,7 @@
   "description": "An example React chat application",
   "version": "0.0.1",
   "private": true,
+  "main": "server.js",
   "author": {
     "name": "Gokhan Kurt",
     "email": "krtgokhan@hotmail.com"
@@ -10,7 +11,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test"
+    "test": "react-scripts test",
+    "serve": "node server.js"
   },
   "dependencies": {
     "anchorme": "^2.1.2",
