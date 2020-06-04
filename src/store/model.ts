@@ -13,7 +13,7 @@ export interface Message {
   user: string;
   message: string;
   date: number;
-  self: boolean;
+  self?: boolean;
 }
 
 export interface GlobalSettings {
@@ -35,11 +35,12 @@ export interface GlobalState {
 
 export interface ActionBase<K extends string> { type: K }
 
-export interface SetSettingsAction extends ActionBase<'setSettings'> { value: Partial<GlobalSettings> }
-export interface ResetSettingsAction extends ActionBase<'resetSettings'> { }
+interface SetSettings extends ActionBase<'setSettings'> { value: Partial<GlobalSettings> }
+interface ResetSettings extends ActionBase<'resetSettings'> { }
 
-export interface AddMessageAction extends ActionBase<'addMessage'> { value: Message }
-export interface UpdateLastSeenAction extends ActionBase<'updateLastSeen'> { }
+interface AddMessage extends ActionBase<'addMessage'> { value: Message }
+interface SendMessage extends ActionBase<'sendMessage'> { value: Message }
+interface UpdateLastSeen extends ActionBase<'updateLastSeen'> { }
 
-export type Action = SetSettingsAction | ResetSettingsAction | AddMessageAction | UpdateLastSeenAction;
+export type Action = SetSettings | ResetSettings | AddMessage | UpdateLastSeen | SendMessage;
 

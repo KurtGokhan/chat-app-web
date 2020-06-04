@@ -1,8 +1,9 @@
-import React from 'react';
-import styles from './chat-message.module.scss';
 import cx from 'classnames';
+import React from 'react';
 import { Message } from 'src/store/model';
 import { useGlobalState } from 'src/store/store';
+import LinkedText from '../linked-text/linked-text';
+import styles from './chat-message.module.scss';
 
 export interface ChatMessageProps {
   message: Message;
@@ -23,7 +24,6 @@ function format24Hours(date: Date) {
   return `${hours}:${minutes}`;
 }
 
-
 export default function ChatMessage({ message }: ChatMessageProps) {
   const [{ settings: { clock24Hours } }] = useGlobalState();
   const date = new Date(message.date);
@@ -37,7 +37,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     <div className="bubble-container">
       <div className="bubble-arrow"></div>
       <div className="bubble">
-        {message.message}
+        <LinkedText text={message.message} />
       </div>
     </div>
   </li>;

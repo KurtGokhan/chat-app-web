@@ -44,6 +44,36 @@ $bubbleBgDark: #3a3d4a;
       // Prevent empty messages from collapsing
       content: "\a0";
     }
+
+    a {
+      color: #66aaff;
+    }
+
+    img,
+    .video-container {
+      max-width: 60vw;
+      display: block;
+      margin-top: 6px;
+    }
+
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%; /* 16:9 */
+      height: 0;
+      width: 60vw;
+      max-width: 1920px;
+      min-width: 300px;
+
+      iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        box-shadow: 1px 1px 6px -1px black;
+      }
+    }
   }
 
   .bubble-arrow {

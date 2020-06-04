@@ -1,10 +1,11 @@
+import cx from 'classnames';
 import React from 'react';
-import styles from './app.module.scss';
-import { Switch, Route, HashRouter as Router, NavLink } from 'react-router-dom';
+import { HashRouter as Router, NavLink, Route, Switch } from 'react-router-dom';
+import { useGlobalState } from 'src/store/store';
 import Chat from '../chat/chat';
 import Settings from '../settings/settings';
-import cx from 'classnames';
-import { useGlobalState } from 'src/store/store';
+import styles from './app.module.scss';
+
 
 export default function App() {
   const [{ settings: { theme } }] = useGlobalState();

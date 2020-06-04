@@ -1,5 +1,6 @@
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
-import { GlobalState, Action, Theme, Language, GlobalSettings } from './model';
+import { GlobalState, Action, Theme, Language, GlobalSettings, Message } from './model';
+import { socket } from './socket';
 
 const generateRandomName = () => {
   const randomNumber = Math.floor(1000 + Math.random() * 9000).toFixed(0);
@@ -33,14 +34,16 @@ export const initialState: GlobalState = {
   settings: storedSettings || initialSettings,
 };
 
+
+
 const reducer = (state: GlobalState, action: Action) => {
   switch (action.type) {
     case 'resetSettings': return { ...state, settings: initialSettings };
     case 'setSettings': return { ...state, settings: { ...state.settings, ...action.value } };
 
     case 'addMessage': return { ...state, messages: { list: [...state.messages.list, action.value], lastSeen: Date.now() } };
+    case 'sendMessage': return { ...state, messages: { list: [...state.messages.list, { ...action.value, self: true }], lastSeen: Date.now() } };
     case 'updateLastSeen': return { ...state, messages: { ...state.messages, lastSeen: Date.now() } };
-
 
     default: throw new Error(`Action type '${action['type']}' is not valid`);
   };
@@ -55,6 +58,10 @@ export const StateProvider: React.FC = ({ children }) => {
   useEffect(() => {
     localStorage.setItem("settings", JSON.stringify(state.settings));
   }, [state]);
+
+  useEffect(() => {
+    socket.on('message', (msg: Message) => { dispatch({ type: 'addMessage', value: msg }) });
+  }, []);
 
   return <StateContext.Provider value={[state, dispatch]} children={children} />;
 };

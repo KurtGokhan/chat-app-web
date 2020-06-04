@@ -1,8 +1,10 @@
 import React, { useCallback, useRef } from 'react';
 import styles from './chat.module.scss';
-import sendIcon from 'src/images/send.png';
+import sendIcon from 'src/assets/send.png';
 import ChatMessage from '../chat-message/chat-message';
 import { useGlobalState } from 'src/store/store';
+import { sendMessage } from 'src/store/socket';
+import emoticons from 'src/assets/emoticons.json';
 
 export default function Chat() {
   const [state, dispatch] = useGlobalState();
@@ -19,15 +21,31 @@ export default function Chat() {
   const onSubmit = useCallback(() => {
     if (!textRef.current) return;
 
-    const message = textRef.current.value as string;
+    const message = (textRef.current.value || '' as string).trim();
     if (message) {
-      dispatch({ type: 'addMessage', value: { self: true, user: state.settings.name, date: Date.now(), message } });
+      const msg = { user: state.settings.name, date: Date.now(), message };
+      dispatch({ type: 'sendMessage', value: msg });
+      sendMessage(msg);
+
+      textRef.current.value = '';
     }
 
-    textRef.current.value = '';
     textRef.current.focus();
     resetTextareaSize();
-  }, [state, dispatch, textRef, resetTextareaSize]);
+  }, [state, textRef, dispatch, resetTextareaSize]);
+
+  const onInput = useCallback(() => {
+    if (!textRef.current) return;
+
+    let value = textRef.current.value;
+
+    for (const [search, emoji] of emoticons) {
+      if (value.endsWith(search)) value = value.replace(search, emoji);
+    }
+
+    textRef.current.value = value;
+    resetTextareaSize();
+  }, [textRef, resetTextareaSize]);
 
   const onKey = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const isEnter = event.keyCode === 13;
@@ -55,7 +73,7 @@ export default function Chat() {
     </div>
 
     <div className={styles.chatInputSection}>
-      <textarea placeholder="Enter message" rows={1} onInput={resetTextareaSize} ref={textRef} onSubmit={onSubmit} onKeyDown={onKey} />
+      <textarea placeholder="Enter message" rows={1} onInput={onInput} ref={textRef} onSubmit={onSubmit} onKeyDown={onKey} />
 
       <button onClick={onSubmit}>
         <img src={sendIcon} alt="Send" />
