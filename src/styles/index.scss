@@ -8,9 +8,16 @@ body,
 
 body {
   margin: 0;
-  font-family: "Roboto", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
   background-color: #f8f8f8;
+}
+
+body,
+input,
+button,
+select,
+textarea {
+  font-family: "Roboto", "Helvetica Neue", sans-serif;
 }

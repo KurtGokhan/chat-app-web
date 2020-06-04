@@ -10,13 +10,16 @@
 
   padding: 20px 30px;
 
-  background: linear-gradient(rgba(255, 255, 255, 0), #d5d5d5 10%, #d5d5d5);
-  background: linear-gradient(rgb(193, 193, 193), #dfdfdf 10%, #efefef);
+  background: #dcdcdc;
   box-shadow: 0px 1px 5px -2px black inset;
 
   ul {
     margin: 0;
     padding: 0;
+  }
+
+  :global(.app-root.dark) & {
+    background: #232935;
   }
 }
 
@@ -26,6 +29,7 @@
   flex: 0 0 auto;
   padding: 10px;
   box-shadow: 0px 7px 12px 2px black;
+  border-top: 1px solid transparent;
 
   textarea {
     flex: 1 1 0;
@@ -40,7 +44,8 @@
     outline: none;
     resize: none;
     overflow-y: overlay;
-    min-height: initial;
+    height: 44px;
+    min-height: 44px;
     max-height: 100px;
 
     border-radius: 5px;
@@ -74,6 +79,10 @@
       height: 36px;
       pointer-events: none;
       vertical-align: middle;
+
+      :global(.app-root.dark) & {
+        filter: invert(1) drop-shadow(2px 4px 4px black);
+      }
     }
   }
 }

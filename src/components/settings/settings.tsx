@@ -13,8 +13,8 @@ export default function Settings() {
     };
   }, [state.settings, dispatch]);
 
-  return <>
-    <div className={styles.settingsContent}>
+  return <div className={styles.settingsContent}>
+    <div className="settings-area">
       <section>
         <label htmlFor="name">User name</label>
         <input type="text" id="name" name="name" value={state.settings.name}
@@ -80,5 +80,5 @@ export default function Settings() {
 
       <button onClick={() => dispatch({ type: 'resetSettings' })}>Reset to defaults</button>
     </div>
-  </>;
+  </div>;
 }

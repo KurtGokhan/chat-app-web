@@ -1,5 +1,8 @@
 @import "src/styles/variables";
 
+$bubbleBgLight: white;
+$bubbleBgDark: #3a3d4a;
+
 .chatMessage :global {
   position: relative;
   display: flex;
@@ -17,15 +20,13 @@
   }
 
   .bubble-container {
-    background-color: white;
     position: relative;
     box-shadow: 0px 1px 4px -1px black;
-    border: 1px solid #e6e6e6;
     border-radius: 6px;
   }
 
   .bubble {
-    background-color: white;
+    background-color: $bubbleBgLight;
     border-radius: 6px;
     box-sizing: border-box;
     position: relative;
@@ -49,13 +50,19 @@
     position: absolute;
     width: 20px;
     height: 24px;
-    background: white;
-    box-shadow: 0px 2px 4px -2px black;
-    border: 1px solid #e6e6e6;
+    background: $bubbleBgLight;
+    box-shadow: -2px 0px 4px -2px black;
 
-    top: -1px;
+    top: 0;
     left: -2px;
     transform: skew(45deg);
+  }
+
+  :global(.app-root.dark) & {
+    .bubble-arrow,
+    .bubble {
+      background: $bubbleBgDark;
+    }
   }
 }
 
@@ -68,6 +75,7 @@
     transform: skew(-45deg);
     left: initial;
     right: -2px;
+    box-shadow: 2px 0px 4px -2px black;
   }
 
   .sender-info {

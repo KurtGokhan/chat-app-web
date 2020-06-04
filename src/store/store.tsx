@@ -2,7 +2,7 @@ import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { GlobalState, Action, Theme, Language, GlobalSettings } from './model';
 
 const generateRandomName = () => {
-  const randomNumber = Math.floor(Math.random() * 10000).toFixed(0).padStart(4, '0');
+  const randomNumber = Math.floor(1000 + Math.random() * 9000).toFixed(0);
   return `guest${randomNumber}`
 };
 
