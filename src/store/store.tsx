@@ -29,7 +29,7 @@ const initialSettings: GlobalSettings = {
 export const initialState: GlobalState = {
   messages: {
     list: [],
-    lastSeen: 0,
+    unreadMessageCount: 0,
   },
   settings: storedSettings || initialSettings,
 };
@@ -41,9 +41,14 @@ const reducer = (state: GlobalState, action: Action) => {
     case 'resetSettings': return { ...state, settings: initialSettings };
     case 'setSettings': return { ...state, settings: { ...state.settings, ...action.value } };
 
-    case 'addMessage': return { ...state, messages: { list: [...state.messages.list, action.value], lastSeen: Date.now() } };
-    case 'sendMessage': return { ...state, messages: { list: [...state.messages.list, { ...action.value, self: true }], lastSeen: Date.now() } };
-    case 'updateLastSeen': return { ...state, messages: { ...state.messages, lastSeen: Date.now() } };
+    case 'receiveMessage': return {
+      ...state, messages: {
+        list: [...state.messages.list, action.value],
+        unreadMessageCount: state.messages.unreadMessageCount + 1,
+      }
+    };
+    case 'sendMessage': return { ...state, messages: { ...state.messages, list: [...state.messages.list, { ...action.value, self: true }] } };
+    case 'markAllMessagesRead': return { ...state, messages: { ...state.messages, unreadMessageCount: 0 } };
 
     default: throw new Error(`Action type '${action['type']}' is not valid`);
   };
@@ -60,7 +65,7 @@ export const StateProvider: React.FC = ({ children }) => {
   }, [state]);
 
   useEffect(() => {
-    socket.on('message', (msg: Message) => { dispatch({ type: 'addMessage', value: msg }) });
+    socket.on('message', (msg: Message) => { dispatch({ type: 'receiveMessage', value: msg }) });
   }, []);
 
   return <StateContext.Provider value={[state, dispatch]} children={children} />;

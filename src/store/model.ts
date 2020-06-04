@@ -27,7 +27,7 @@ export interface GlobalSettings {
 export interface GlobalState {
   messages: {
     list: Message[],
-    lastSeen: number,
+    unreadMessageCount: number,
   },
   settings: GlobalSettings,
 }
@@ -38,9 +38,9 @@ export interface ActionBase<K extends string> { type: K }
 interface SetSettings extends ActionBase<'setSettings'> { value: Partial<GlobalSettings> }
 interface ResetSettings extends ActionBase<'resetSettings'> { }
 
-interface AddMessage extends ActionBase<'addMessage'> { value: Message }
+interface ReceiveMessage extends ActionBase<'receiveMessage'> { value: Message }
 interface SendMessage extends ActionBase<'sendMessage'> { value: Message }
-interface UpdateLastSeen extends ActionBase<'updateLastSeen'> { }
+interface MarkAllMessagesRead extends ActionBase<'markAllMessagesRead'> { }
 
-export type Action = SetSettings | ResetSettings | AddMessage | UpdateLastSeen | SendMessage;
+export type Action = SetSettings | ResetSettings | ReceiveMessage | MarkAllMessagesRead | SendMessage;
 

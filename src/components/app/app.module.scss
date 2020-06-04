@@ -1,3 +1,5 @@
+@import "src/styles/variables";
+
 .nav :global {
   background: #3a3d4a;
   box-shadow: 0 2px 6px -2px black;
@@ -10,6 +12,7 @@
   a {
     box-sizing: border-box;
     display: inline-block;
+    position: relative;
     font-size: 16px;
     line-height: 20px;
     margin: 0 10px;
@@ -34,6 +37,19 @@
 
     &.active {
       background: #282a34;
+    }
+
+    .notification {
+      background-color: $primary;
+      color: white;
+      font-size: 12px;
+      border-radius: 6px;
+      width: 20px;
+      height: 20px;
+      display: inline-block;
+      line-height: 20px;
+      position: absolute;
+      left: 20px;
     }
   }
 

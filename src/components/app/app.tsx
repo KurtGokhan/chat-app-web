@@ -8,13 +8,16 @@ import styles from './app.module.scss';
 
 
 export default function App() {
-  const [{ settings: { theme } }] = useGlobalState();
+  const [{ settings: { theme }, messages: { unreadMessageCount } }] = useGlobalState();
 
   return (
     <Router>
       <div className={cx(styles.app, 'app-root', theme)}>
         <nav className={styles.nav}>
-          <NavLink activeClassName="active" exact to="/" >Chat</NavLink>
+          <NavLink activeClassName="active" exact to="/" >
+            Chat
+            {unreadMessageCount > 0 && <span className="notification">{unreadMessageCount}</span>}
+          </NavLink>
           <NavLink activeClassName="active" to="/settings">Settings</NavLink>
         </nav>
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import styles from './chat.module.scss';
 import sendIcon from 'src/assets/send.png';
 import ChatMessage from '../chat-message/chat-message';
@@ -10,6 +10,33 @@ export default function Chat() {
   const [state, dispatch] = useGlobalState();
 
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+
+  useEffect(() => {
+    dispatch({ type: 'markAllMessagesRead' });
+
+    const handle = setInterval(() => {
+      console.log('check timeout');
+
+      const scroll = scrollRef.current;
+      if (!scroll) return;
+
+      if ((scroll.scrollTop + scroll.offsetHeight + 20) >= scroll.scrollHeight) {
+        dispatch({ type: 'markAllMessagesRead' });
+      }
+    }, 3000);
+
+    return () => clearInterval(handle);
+  }, [dispatch, scrollRef]);
+
+
+  const scrollToBottom = useCallback(() => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+
+    scroll.scrollTo(0, scroll.scrollHeight);
+  }, [scrollRef]);
 
   const resetTextareaSize = useCallback(() => {
     const element = textRef.current;
@@ -17,6 +44,7 @@ export default function Chat() {
     element.style.height = '5px';
     element.style.height = (element.scrollHeight) + 'px';
   }, [textRef]);
+
 
   const onSubmit = useCallback(() => {
     if (!textRef.current) return;
@@ -28,11 +56,13 @@ export default function Chat() {
       sendMessage(msg);
 
       textRef.current.value = '';
+      scrollToBottom();
     }
 
     textRef.current.focus();
     resetTextareaSize();
-  }, [state, textRef, dispatch, resetTextareaSize]);
+  }, [state, textRef, dispatch, resetTextareaSize, scrollToBottom]);
+
 
   const onInput = useCallback(() => {
     if (!textRef.current) return;
@@ -46,6 +76,7 @@ export default function Chat() {
     textRef.current.value = value;
     resetTextareaSize();
   }, [textRef, resetTextareaSize]);
+
 
   const onKey = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const isEnter = event.keyCode === 13;
@@ -63,8 +94,9 @@ export default function Chat() {
     }
   }, [state, onSubmit]);
 
+
   return <>
-    <div className={styles.chatContent}>
+    <div className={styles.chatContent} ref={scrollRef}>
       <ul>
         {state.messages.list.map((x, i) =>
           <ChatMessage message={x} key={i}></ChatMessage>
