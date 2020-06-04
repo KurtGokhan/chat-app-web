@@ -26,14 +26,21 @@ const initialSettings: GlobalSettings = {
 };
 
 export const initialState: GlobalState = {
+  messages: {
+    list: [],
+    lastSeen: 0,
+  },
   settings: storedSettings || initialSettings,
 };
 
 const reducer = (state: GlobalState, action: Action) => {
   switch (action.type) {
-    case 'identity': return { ...state };
     case 'resetSettings': return { ...state, settings: initialSettings };
     case 'setSettings': return { ...state, settings: { ...state.settings, ...action.value } };
+
+    case 'addMessage': return { ...state, messages: { list: [...state.messages.list, action.value], lastSeen: Date.now() } };
+    case 'updateLastSeen': return { ...state, messages: { ...state.messages, lastSeen: Date.now() } };
+
 
     default: throw new Error(`Action type '${action['type']}' is not valid`);
   };

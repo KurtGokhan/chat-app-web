@@ -6,9 +6,11 @@
   flex-direction: column-reverse;
 
   overflow-x: hidden;
+  overflow-y: auto;
   overflow-y: overlay;
 
   padding: 20px 30px;
+  padding-right: 36px;
 
   background: #dcdcdc;
   box-shadow: 0px 1px 5px -2px black inset;
@@ -26,6 +28,7 @@
 .chatInputSection :global {
   display: flex;
   flex-direction: row;
+  align-items: center;
   flex: 0 0 auto;
   padding: 10px;
   box-shadow: 0px 7px 12px 2px black;
@@ -43,6 +46,7 @@
     box-sizing: border-box;
     outline: none;
     resize: none;
+    overflow-y: auto;
     overflow-y: overlay;
     height: 44px;
     min-height: 44px;
@@ -61,6 +65,8 @@
     background: transparent;
     cursor: pointer;
     user-select: none;
+    width: 48px;
+    height: 48px;
 
     &:focus {
       background: rgba(#000000, 0.05);

@@ -9,6 +9,13 @@ export enum Language {
   Turkish = 'tr',
 }
 
+export interface Message {
+  user: string;
+  message: string;
+  date: number;
+  self: boolean;
+}
+
 export interface GlobalSettings {
   name: string,
   theme: Theme,
@@ -18,15 +25,21 @@ export interface GlobalSettings {
 }
 
 export interface GlobalState {
+  messages: {
+    list: Message[],
+    lastSeen: number,
+  },
   settings: GlobalSettings,
 }
 
-export interface ActionBase<K extends string> { type: K }
 
-export interface IdentityAction extends ActionBase<'identity'> { }
+export interface ActionBase<K extends string> { type: K }
 
 export interface SetSettingsAction extends ActionBase<'setSettings'> { value: Partial<GlobalSettings> }
 export interface ResetSettingsAction extends ActionBase<'resetSettings'> { }
 
-export type Action = IdentityAction | SetSettingsAction | ResetSettingsAction;
+export interface AddMessageAction extends ActionBase<'addMessage'> { value: Message }
+export interface UpdateLastSeenAction extends ActionBase<'updateLastSeen'> { }
+
+export type Action = SetSettingsAction | ResetSettingsAction | AddMessageAction | UpdateLastSeenAction;
 

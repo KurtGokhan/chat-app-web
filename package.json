@@ -1,5 +1,6 @@
 {
   "name": "chat-app-web",
+  "description": "An example React chat application",
   "version": "0.0.1",
   "private": true,
   "author": {
