@@ -16,11 +16,6 @@
   line-height: 20px;
   letter-spacing: 0.16px;
 
-  &::-webkit-scrollbar {
-    width: 8px;
-    background-color: #616161;
-  }
-
   :global {
     section {
       margin-bottom: 24px;

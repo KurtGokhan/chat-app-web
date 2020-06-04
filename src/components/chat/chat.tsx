@@ -5,10 +5,15 @@ import ChatMessage from '../chat-message/chat-message';
 
 export default function Chat() {
   return <>
-    <ul className={styles.chatContent}>
-      <ChatMessage></ChatMessage>
-      <ChatMessage rightAligned></ChatMessage>
-    </ul>
+    <div className={styles.chatContent}>
+      <ul>
+        <ChatMessage></ChatMessage>
+        <ChatMessage></ChatMessage>
+        <ChatMessage></ChatMessage>
+        <ChatMessage rightAligned></ChatMessage>
+        <ChatMessage rightAligned></ChatMessage>
+      </ul>
+    </div>
 
     <div className={styles.chatInputSection}>
       <textarea placeholder="Enter message" rows={1} onInput={(event) => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './app.module.scss';
-import { Switch, Route, Link, HashRouter as Router, NavLink } from 'react-router-dom';
+import { Switch, Route, HashRouter as Router, NavLink } from 'react-router-dom';
 import Chat from '../chat/chat';
 import Settings from '../settings/settings';
 
