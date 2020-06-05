@@ -1,22 +1,13 @@
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { GlobalState, Action, Theme, Language, GlobalSettings, Message } from './model';
 import { socket } from './socket';
+import { useTranslation } from 'react-i18next';
+import { storedSettings, saveStoredData } from './storage';
 
 const generateRandomName = () => {
   const randomNumber = Math.floor(1000 + Math.random() * 9000).toFixed(0);
   return `guest${randomNumber}`
 };
-
-
-function getStoredData<T = any>(key: string) {
-  try {
-    return JSON.parse(localStorage.getItem(key) ?? '') as T;
-  } catch {
-    return undefined;
-  }
-}
-
-const storedSettings = getStoredData<GlobalSettings>('settings');
 
 const initialSettings: GlobalSettings = {
   name: generateRandomName(),
@@ -26,7 +17,7 @@ const initialSettings: GlobalSettings = {
   sendOnCtrlEnter: false,
 };
 
-export const initialState: GlobalState = {
+const initialState: GlobalState = {
   messages: {
     list: [],
     unreadMessageCount: 0,
@@ -55,21 +46,35 @@ const reducer = (state: GlobalState, action: Action) => {
 };
 
 
-export const StateContext = createContext<[GlobalState, React.Dispatch<Action>]>([initialState, () => null]);
+const StateContext = createContext<[GlobalState, React.Dispatch<Action>]>([initialState, () => null]);
 
-export const StateProvider: React.FC = ({ children }) => {
+/**
+ * Wrapper component for providing the global state context to children
+ */
+export function StateProvider({ children }: React.PropsWithChildren<{}>) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const { i18n } = useTranslation();
 
+  // Propagate language change
   useEffect(() => {
-    localStorage.setItem("settings", JSON.stringify(state.settings));
-  }, [state]);
+    i18n.changeLanguage(state.settings.language);
+  }, [i18n, state.settings.language]);
 
+  // Save settings to storage when they change
+  useEffect(() => {
+    saveStoredData('settings', state.settings);
+  }, [state.settings]);
+
+  // When a message is received from the socket, dispatch the action `receiveMessage`
   useEffect(() => {
     socket.on('message', (msg: Message) => { dispatch({ type: 'receiveMessage', value: msg }) });
   }, []);
 
+  // Wrap the children with the state context
   return <StateContext.Provider value={[state, dispatch]} children={children} />;
 };
 
-
+/**
+ * React hook for returning the `state` and `dispatch` for the global state
+ */
 export const useGlobalState = () => useContext(StateContext);
