@@ -54,7 +54,7 @@ Following are the features listed in the homework document
   - [x] Clock format
   - [x] Send messages on <kbd>CTRL+ENTER</kbd>
   - [x] Reset button
-- [ ] Internationalization
+- [x] Internationalization
 - [ ] Unread chat notifications (?)
 
 The code is minimal as I avoided using too many modules. 
@@ -69,12 +69,12 @@ It works in all modern browsers with subtle differences.
   - When it's on, pressing <kbd>enter</kbd> will add a newline and <kbd>ctrl+enter</kbd> will send the message
   - When it's off, pressing <kbd>enter</kbd> or <kbd>ctrl+enter</kbd> will send the message
   - Pressing <kbd>shift+enter</kbd> will add a newline regardless of whether it's on or off
-- I did not add extra features. Instead I focused on making sure existing features has good design and UX.
-- Many improvements can be made to make this a real chat application. 
+- App is not stress tested. Too many messages will probably slow down the app.
+- I did not add extra features. Instead I focused on making sure existing features has good design and UX. Many other improvements can be made to make this a real chat application. I decided to keep it minimal.
 
 
 ## Server
 
 The server is a very small application that relays the incoming messages to all connected users. It serves static files in `build` directory and it has a socket.io endpoint.
 
-It is prebuilt into `server.js` for convenience. Its source code can be seen in [another repository](https://github.com/KurtGokhan/chat-app-server).
+It is prebuilt into `server.js` for convenience. Its source code can be seen in [server directory](https://github.com/KurtGokhan/chat-app-web/tree/master/server).

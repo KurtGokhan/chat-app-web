@@ -691,7 +691,7 @@ exports.colors = [6, 2, 3, 4, 5, 1];
 try {
 	// Optional dependency (as in, doesn't need to be installed, NOT like optionalDependencies in package.json)
 	// eslint-disable-next-line import/no-extraneous-dependencies
-	const supportsColor = __webpack_require__(858);
+	const supportsColor = __webpack_require__(736);
 
 	if (supportsColor && (supportsColor.stderr || supportsColor).level >= 2) {
 		exports.colors = [
@@ -4866,6 +4866,425 @@ exports.enable(load());
 
 /***/ }),
 
+/***/ 82:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+
+const EventEmitter = __webpack_require__(614);
+const { createHash } = __webpack_require__(417);
+const { createServer, STATUS_CODES } = __webpack_require__(605);
+
+const PerMessageDeflate = __webpack_require__(301);
+const WebSocket = __webpack_require__(21);
+const { format, parse } = __webpack_require__(330);
+const { GUID, kWebSocket } = __webpack_require__(799);
+
+const keyRegex = /^[+/0-9A-Za-z]{22}==$/;
+
+/**
+ * Class representing a WebSocket server.
+ *
+ * @extends EventEmitter
+ */
+class WebSocketServer extends EventEmitter {
+  /**
+   * Create a `WebSocketServer` instance.
+   *
+   * @param {Object} options Configuration options
+   * @param {Number} options.backlog The maximum length of the queue of pending
+   *     connections
+   * @param {Boolean} options.clientTracking Specifies whether or not to track
+   *     clients
+   * @param {Function} options.handleProtocols A hook to handle protocols
+   * @param {String} options.host The hostname where to bind the server
+   * @param {Number} options.maxPayload The maximum allowed message size
+   * @param {Boolean} options.noServer Enable no server mode
+   * @param {String} options.path Accept only connections matching this path
+   * @param {(Boolean|Object)} options.perMessageDeflate Enable/disable
+   *     permessage-deflate
+   * @param {Number} options.port The port where to bind the server
+   * @param {http.Server} options.server A pre-created HTTP/S server to use
+   * @param {Function} options.verifyClient A hook to reject connections
+   * @param {Function} callback A listener for the `listening` event
+   */
+  constructor(options, callback) {
+    super();
+
+    options = {
+      maxPayload: 100 * 1024 * 1024,
+      perMessageDeflate: false,
+      handleProtocols: null,
+      clientTracking: true,
+      verifyClient: null,
+      noServer: false,
+      backlog: null, // use default (511 as implemented in net.js)
+      server: null,
+      host: null,
+      path: null,
+      port: null,
+      ...options
+    };
+
+    if (options.port == null && !options.server && !options.noServer) {
+      throw new TypeError(
+        'One of the "port", "server", or "noServer" options must be specified'
+      );
+    }
+
+    if (options.port != null) {
+      this._server = createServer((req, res) => {
+        const body = STATUS_CODES[426];
+
+        res.writeHead(426, {
+          'Content-Length': body.length,
+          'Content-Type': 'text/plain'
+        });
+        res.end(body);
+      });
+      this._server.listen(
+        options.port,
+        options.host,
+        options.backlog,
+        callback
+      );
+    } else if (options.server) {
+      this._server = options.server;
+    }
+
+    if (this._server) {
+      this._removeListeners = addListeners(this._server, {
+        listening: this.emit.bind(this, 'listening'),
+        error: this.emit.bind(this, 'error'),
+        upgrade: (req, socket, head) => {
+          this.handleUpgrade(req, socket, head, (ws) => {
+            this.emit('connection', ws, req);
+          });
+        }
+      });
+    }
+
+    if (options.perMessageDeflate === true) options.perMessageDeflate = {};
+    if (options.clientTracking) this.clients = new Set();
+    this.options = options;
+  }
+
+  /**
+   * Returns the bound address, the address family name, and port of the server
+   * as reported by the operating system if listening on an IP socket.
+   * If the server is listening on a pipe or UNIX domain socket, the name is
+   * returned as a string.
+   *
+   * @return {(Object|String|null)} The address of the server
+   * @public
+   */
+  address() {
+    if (this.options.noServer) {
+      throw new Error('The server is operating in "noServer" mode');
+    }
+
+    if (!this._server) return null;
+    return this._server.address();
+  }
+
+  /**
+   * Close the server.
+   *
+   * @param {Function} cb Callback
+   * @public
+   */
+  close(cb) {
+    if (cb) this.once('close', cb);
+
+    //
+    // Terminate all associated clients.
+    //
+    if (this.clients) {
+      for (const client of this.clients) client.terminate();
+    }
+
+    const server = this._server;
+
+    if (server) {
+      this._removeListeners();
+      this._removeListeners = this._server = null;
+
+      //
+      // Close the http server if it was internally created.
+      //
+      if (this.options.port != null) {
+        server.close(() => this.emit('close'));
+        return;
+      }
+    }
+
+    process.nextTick(emitClose, this);
+  }
+
+  /**
+   * See if a given request should be handled by this server instance.
+   *
+   * @param {http.IncomingMessage} req Request object to inspect
+   * @return {Boolean} `true` if the request is valid, else `false`
+   * @public
+   */
+  shouldHandle(req) {
+    if (this.options.path) {
+      const index = req.url.indexOf('?');
+      const pathname = index !== -1 ? req.url.slice(0, index) : req.url;
+
+      if (pathname !== this.options.path) return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Handle a HTTP Upgrade request.
+   *
+   * @param {http.IncomingMessage} req The request object
+   * @param {net.Socket} socket The network socket between the server and client
+   * @param {Buffer} head The first packet of the upgraded stream
+   * @param {Function} cb Callback
+   * @public
+   */
+  handleUpgrade(req, socket, head, cb) {
+    socket.on('error', socketOnError);
+
+    const key =
+      req.headers['sec-websocket-key'] !== undefined
+        ? req.headers['sec-websocket-key'].trim()
+        : false;
+    const version = +req.headers['sec-websocket-version'];
+    const extensions = {};
+
+    if (
+      req.method !== 'GET' ||
+      req.headers.upgrade.toLowerCase() !== 'websocket' ||
+      !key ||
+      !keyRegex.test(key) ||
+      (version !== 8 && version !== 13) ||
+      !this.shouldHandle(req)
+    ) {
+      return abortHandshake(socket, 400);
+    }
+
+    if (this.options.perMessageDeflate) {
+      const perMessageDeflate = new PerMessageDeflate(
+        this.options.perMessageDeflate,
+        true,
+        this.options.maxPayload
+      );
+
+      try {
+        const offers = parse(req.headers['sec-websocket-extensions']);
+
+        if (offers[PerMessageDeflate.extensionName]) {
+          perMessageDeflate.accept(offers[PerMessageDeflate.extensionName]);
+          extensions[PerMessageDeflate.extensionName] = perMessageDeflate;
+        }
+      } catch (err) {
+        return abortHandshake(socket, 400);
+      }
+    }
+
+    //
+    // Optionally call external client verification handler.
+    //
+    if (this.options.verifyClient) {
+      const info = {
+        origin:
+          req.headers[`${version === 8 ? 'sec-websocket-origin' : 'origin'}`],
+        secure: !!(req.connection.authorized || req.connection.encrypted),
+        req
+      };
+
+      if (this.options.verifyClient.length === 2) {
+        this.options.verifyClient(info, (verified, code, message, headers) => {
+          if (!verified) {
+            return abortHandshake(socket, code || 401, message, headers);
+          }
+
+          this.completeUpgrade(key, extensions, req, socket, head, cb);
+        });
+        return;
+      }
+
+      if (!this.options.verifyClient(info)) return abortHandshake(socket, 401);
+    }
+
+    this.completeUpgrade(key, extensions, req, socket, head, cb);
+  }
+
+  /**
+   * Upgrade the connection to WebSocket.
+   *
+   * @param {String} key The value of the `Sec-WebSocket-Key` header
+   * @param {Object} extensions The accepted extensions
+   * @param {http.IncomingMessage} req The request object
+   * @param {net.Socket} socket The network socket between the server and client
+   * @param {Buffer} head The first packet of the upgraded stream
+   * @param {Function} cb Callback
+   * @throws {Error} If called more than once with the same socket
+   * @private
+   */
+  completeUpgrade(key, extensions, req, socket, head, cb) {
+    //
+    // Destroy the socket if the client has already sent a FIN packet.
+    //
+    if (!socket.readable || !socket.writable) return socket.destroy();
+
+    if (socket[kWebSocket]) {
+      throw new Error(
+        'server.handleUpgrade() was called more than once with the same ' +
+          'socket, possibly due to a misconfiguration'
+      );
+    }
+
+    const digest = createHash('sha1')
+      .update(key + GUID)
+      .digest('base64');
+
+    const headers = [
+      'HTTP/1.1 101 Switching Protocols',
+      'Upgrade: websocket',
+      'Connection: Upgrade',
+      `Sec-WebSocket-Accept: ${digest}`
+    ];
+
+    const ws = new WebSocket(null);
+    let protocol = req.headers['sec-websocket-protocol'];
+
+    if (protocol) {
+      protocol = protocol.trim().split(/ *, */);
+
+      //
+      // Optionally call external protocol selection handler.
+      //
+      if (this.options.handleProtocols) {
+        protocol = this.options.handleProtocols(protocol, req);
+      } else {
+        protocol = protocol[0];
+      }
+
+      if (protocol) {
+        headers.push(`Sec-WebSocket-Protocol: ${protocol}`);
+        ws.protocol = protocol;
+      }
+    }
+
+    if (extensions[PerMessageDeflate.extensionName]) {
+      const params = extensions[PerMessageDeflate.extensionName].params;
+      const value = format({
+        [PerMessageDeflate.extensionName]: [params]
+      });
+      headers.push(`Sec-WebSocket-Extensions: ${value}`);
+      ws._extensions = extensions;
+    }
+
+    //
+    // Allow external modification/inspection of handshake headers.
+    //
+    this.emit('headers', headers, req);
+
+    socket.write(headers.concat('\r\n').join('\r\n'));
+    socket.removeListener('error', socketOnError);
+
+    ws.setSocket(socket, head, this.options.maxPayload);
+
+    if (this.clients) {
+      this.clients.add(ws);
+      ws.on('close', () => this.clients.delete(ws));
+    }
+
+    cb(ws);
+  }
+}
+
+module.exports = WebSocketServer;
+
+/**
+ * Add event listeners on an `EventEmitter` using a map of <event, listener>
+ * pairs.
+ *
+ * @param {EventEmitter} server The event emitter
+ * @param {Object.<String, Function>} map The listeners to add
+ * @return {Function} A function that will remove the added listeners when called
+ * @private
+ */
+function addListeners(server, map) {
+  for (const event of Object.keys(map)) server.on(event, map[event]);
+
+  return function removeListeners() {
+    for (const event of Object.keys(map)) {
+      server.removeListener(event, map[event]);
+    }
+  };
+}
+
+/**
+ * Emit a `'close'` event on an `EventEmitter`.
+ *
+ * @param {EventEmitter} server The event emitter
+ * @private
+ */
+function emitClose(server) {
+  server.emit('close');
+}
+
+/**
+ * Handle premature socket errors.
+ *
+ * @private
+ */
+function socketOnError() {
+  this.destroy();
+}
+
+/**
+ * Close the connection when preconditions are not fulfilled.
+ *
+ * @param {net.Socket} socket The socket of the upgrade request
+ * @param {Number} code The HTTP response status code
+ * @param {String} [message] The HTTP response body
+ * @param {Object} [headers] Additional HTTP response headers
+ * @private
+ */
+function abortHandshake(socket, code, message, headers) {
+  if (socket.writable) {
+    message = message || STATUS_CODES[code];
+    headers = {
+      Connection: 'close',
+      'Content-Type': 'text/html',
+      'Content-Length': Buffer.byteLength(message),
+      ...headers
+    };
+
+    socket.write(
+      `HTTP/1.1 ${code} ${STATUS_CODES[code]}\r\n` +
+        Object.keys(headers)
+          .map((h) => `${h}: ${headers[h]}`)
+          .join('\r\n') +
+        '\r\n\r\n' +
+        message
+    );
+  }
+
+  socket.removeListener('error', socketOnError);
+  socket.destroy();
+}
+
+
+/***/ }),
+
+/***/ 87:
+/***/ (function(module) {
+
+module.exports = require("os");
+
+/***/ }),
+
 /***/ 92:
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -8968,7 +9387,7 @@ module.exports = eval("require")("utf-8-validate");
 const WebSocket = __webpack_require__(21);
 
 WebSocket.createWebSocketStream = __webpack_require__(948);
-WebSocket.Server = __webpack_require__(613);
+WebSocket.Server = __webpack_require__(82);
 WebSocket.Receiver = __webpack_require__(312);
 WebSocket.Sender = __webpack_require__(10);
 
@@ -10454,7 +10873,7 @@ exports.colors = [6, 2, 3, 4, 5, 1];
 try {
 	// Optional dependency (as in, doesn't need to be installed, NOT like optionalDependencies in package.json)
 	// eslint-disable-next-line import/no-extraneous-dependencies
-	const supportsColor = __webpack_require__(858);
+	const supportsColor = __webpack_require__(736);
 
 	if (supportsColor && (supportsColor.stderr || supportsColor).level >= 2) {
 		exports.colors = [
@@ -17165,7 +17584,7 @@ module.exports = {"application/andrew-inset":["ez"],"application/applixware":["a
 /***/ 468:
 /***/ (function(module) {
 
-module.exports = {"_from":"socket.io-client@2.3.0","_id":"socket.io-client@2.3.0","_inBundle":false,"_integrity":"sha512-cEQQf24gET3rfhxZ2jJ5xzAOo/xhZwK+mOqtGRg5IowZsMgwvHwnf/mCRapAAkadhM26y+iydgwsXGObBB5ZdA==","_location":"/socket.io-client","_phantomChildren":{},"_requested":{"type":"version","registry":true,"raw":"socket.io-client@2.3.0","name":"socket.io-client","escapedName":"socket.io-client","rawSpec":"2.3.0","saveSpec":null,"fetchSpec":"2.3.0"},"_requiredBy":["/socket.io"],"_resolved":"https://registry.npmjs.org/socket.io-client/-/socket.io-client-2.3.0.tgz","_shasum":"14d5ba2e00b9bcd145ae443ab96b3f86cbcc1bb4","_spec":"socket.io-client@2.3.0","_where":"D:\\Documents\\Projects\\docler\\chat-app-server\\node_modules\\socket.io","bugs":{"url":"https://github.com/Automattic/socket.io-client/issues"},"bundleDependencies":false,"contributors":[{"name":"Guillermo Rauch","email":"rauchg@gmail.com"},{"name":"Arnout Kazemier","email":"info@3rd-eden.com"},{"name":"Vladimir Dronnikov","email":"dronnikov@gmail.com"},{"name":"Einar Otto Stangvik","email":"einaros@gmail.com"}],"dependencies":{"backo2":"1.0.2","base64-arraybuffer":"0.1.5","component-bind":"1.0.0","component-emitter":"1.2.1","debug":"~4.1.0","engine.io-client":"~3.4.0","has-binary2":"~1.0.2","has-cors":"1.1.0","indexof":"0.0.1","object-component":"0.0.3","parseqs":"0.0.5","parseuri":"0.0.5","socket.io-parser":"~3.3.0","to-array":"0.1.4"},"deprecated":false,"description":"[![Build Status](https://secure.travis-ci.org/socketio/socket.io-client.svg?branch=master)](http://travis-ci.org/socketio/socket.io-client) [![Dependency Status](https://david-dm.org/socketio/socket.io-client.svg)](https://david-dm.org/socketio/socket.io-client) [![devDependency Status](https://david-dm.org/socketio/socket.io-client/dev-status.svg)](https://david-dm.org/socketio/socket.io-client#info=devDependencies) [![NPM version](https://badge.fury.io/js/socket.io-client.svg)](https://www.npmjs.com/package/socket.io-client) ![Downloads](http://img.shields.io/npm/dm/socket.io-client.svg?style=flat) [![](http://slack.socket.io/badge.svg?)](http://slack.socket.io)","devDependencies":{"babel-core":"^6.24.1","babel-eslint":"4.1.7","babel-loader":"7.0.0","babel-preset-es2015":"6.24.1","concat-stream":"^1.6.0","derequire":"^2.0.6","eslint-config-standard":"4.4.0","eslint-plugin-standard":"1.3.1","expect.js":"0.3.1","gulp":"^3.9.1","gulp-eslint":"1.1.1","gulp-file":"^0.3.0","gulp-istanbul":"^1.1.1","gulp-mocha":"^4.3.1","gulp-task-listing":"1.0.1","imports-loader":"^0.7.1","istanbul":"^0.4.5","mocha":"^3.3.0","socket.io":"2.3.0","socket.io-browsers":"^1.0.0","strip-loader":"0.1.2","text-blob-builder":"0.0.1","webpack-merge":"4.1.2","webpack-stream":"3.2.0","zuul":"~3.11.1","zuul-builder-webpack":"^1.2.0","zuul-ngrok":"4.0.0"},"files":["lib/","dist/"],"homepage":"https://github.com/Automattic/socket.io-client#readme","keywords":["realtime","framework","websocket","tcp","events","client"],"license":"MIT","main":"./lib/index","name":"socket.io-client","repository":{"type":"git","url":"git+https://github.com/Automattic/socket.io-client.git"},"scripts":{"test":"gulp test"},"version":"2.3.0"};
+module.exports = {"_args":[["socket.io-client@2.3.0","D:\\Documents\\Projects\\docler\\chat-app-web\\server"]],"_from":"socket.io-client@2.3.0","_id":"socket.io-client@2.3.0","_inBundle":false,"_integrity":"sha512-cEQQf24gET3rfhxZ2jJ5xzAOo/xhZwK+mOqtGRg5IowZsMgwvHwnf/mCRapAAkadhM26y+iydgwsXGObBB5ZdA==","_location":"/socket.io-client","_phantomChildren":{},"_requested":{"type":"version","registry":true,"raw":"socket.io-client@2.3.0","name":"socket.io-client","escapedName":"socket.io-client","rawSpec":"2.3.0","saveSpec":null,"fetchSpec":"2.3.0"},"_requiredBy":["/socket.io"],"_resolved":"https://registry.npmjs.org/socket.io-client/-/socket.io-client-2.3.0.tgz","_spec":"2.3.0","_where":"D:\\Documents\\Projects\\docler\\chat-app-web\\server","bugs":{"url":"https://github.com/Automattic/socket.io-client/issues"},"contributors":[{"name":"Guillermo Rauch","email":"rauchg@gmail.com"},{"name":"Arnout Kazemier","email":"info@3rd-eden.com"},{"name":"Vladimir Dronnikov","email":"dronnikov@gmail.com"},{"name":"Einar Otto Stangvik","email":"einaros@gmail.com"}],"dependencies":{"backo2":"1.0.2","base64-arraybuffer":"0.1.5","component-bind":"1.0.0","component-emitter":"1.2.1","debug":"~4.1.0","engine.io-client":"~3.4.0","has-binary2":"~1.0.2","has-cors":"1.1.0","indexof":"0.0.1","object-component":"0.0.3","parseqs":"0.0.5","parseuri":"0.0.5","socket.io-parser":"~3.3.0","to-array":"0.1.4"},"description":"[![Build Status](https://secure.travis-ci.org/socketio/socket.io-client.svg?branch=master)](http://travis-ci.org/socketio/socket.io-client) [![Dependency Status](https://david-dm.org/socketio/socket.io-client.svg)](https://david-dm.org/socketio/socket.io-client) [![devDependency Status](https://david-dm.org/socketio/socket.io-client/dev-status.svg)](https://david-dm.org/socketio/socket.io-client#info=devDependencies) [![NPM version](https://badge.fury.io/js/socket.io-client.svg)](https://www.npmjs.com/package/socket.io-client) ![Downloads](http://img.shields.io/npm/dm/socket.io-client.svg?style=flat) [![](http://slack.socket.io/badge.svg?)](http://slack.socket.io)","devDependencies":{"babel-core":"^6.24.1","babel-eslint":"4.1.7","babel-loader":"7.0.0","babel-preset-es2015":"6.24.1","concat-stream":"^1.6.0","derequire":"^2.0.6","eslint-config-standard":"4.4.0","eslint-plugin-standard":"1.3.1","expect.js":"0.3.1","gulp":"^3.9.1","gulp-eslint":"1.1.1","gulp-file":"^0.3.0","gulp-istanbul":"^1.1.1","gulp-mocha":"^4.3.1","gulp-task-listing":"1.0.1","imports-loader":"^0.7.1","istanbul":"^0.4.5","mocha":"^3.3.0","socket.io":"2.3.0","socket.io-browsers":"^1.0.0","strip-loader":"0.1.2","text-blob-builder":"0.0.1","webpack-merge":"4.1.2","webpack-stream":"3.2.0","zuul":"~3.11.1","zuul-builder-webpack":"^1.2.0","zuul-ngrok":"4.0.0"},"files":["lib/","dist/"],"homepage":"https://github.com/Automattic/socket.io-client#readme","keywords":["realtime","framework","websocket","tcp","events","client"],"license":"MIT","main":"./lib/index","name":"socket.io-client","repository":{"type":"git","url":"git+https://github.com/Automattic/socket.io-client.git"},"scripts":{"test":"gulp test"},"version":"2.3.0"};
 
 /***/ }),
 
@@ -22012,413 +22431,17 @@ Socket.prototype.run = function(event, fn){
 /***/ }),
 
 /***/ 613:
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
 "use strict";
 
-
-const EventEmitter = __webpack_require__(614);
-const { createHash } = __webpack_require__(417);
-const { createServer, STATUS_CODES } = __webpack_require__(605);
-
-const PerMessageDeflate = __webpack_require__(301);
-const WebSocket = __webpack_require__(21);
-const { format, parse } = __webpack_require__(330);
-const { GUID, kWebSocket } = __webpack_require__(799);
-
-const keyRegex = /^[+/0-9A-Za-z]{22}==$/;
-
-/**
- * Class representing a WebSocket server.
- *
- * @extends EventEmitter
- */
-class WebSocketServer extends EventEmitter {
-  /**
-   * Create a `WebSocketServer` instance.
-   *
-   * @param {Object} options Configuration options
-   * @param {Number} options.backlog The maximum length of the queue of pending
-   *     connections
-   * @param {Boolean} options.clientTracking Specifies whether or not to track
-   *     clients
-   * @param {Function} options.handleProtocols A hook to handle protocols
-   * @param {String} options.host The hostname where to bind the server
-   * @param {Number} options.maxPayload The maximum allowed message size
-   * @param {Boolean} options.noServer Enable no server mode
-   * @param {String} options.path Accept only connections matching this path
-   * @param {(Boolean|Object)} options.perMessageDeflate Enable/disable
-   *     permessage-deflate
-   * @param {Number} options.port The port where to bind the server
-   * @param {http.Server} options.server A pre-created HTTP/S server to use
-   * @param {Function} options.verifyClient A hook to reject connections
-   * @param {Function} callback A listener for the `listening` event
-   */
-  constructor(options, callback) {
-    super();
-
-    options = {
-      maxPayload: 100 * 1024 * 1024,
-      perMessageDeflate: false,
-      handleProtocols: null,
-      clientTracking: true,
-      verifyClient: null,
-      noServer: false,
-      backlog: null, // use default (511 as implemented in net.js)
-      server: null,
-      host: null,
-      path: null,
-      port: null,
-      ...options
-    };
-
-    if (options.port == null && !options.server && !options.noServer) {
-      throw new TypeError(
-        'One of the "port", "server", or "noServer" options must be specified'
-      );
-    }
-
-    if (options.port != null) {
-      this._server = createServer((req, res) => {
-        const body = STATUS_CODES[426];
-
-        res.writeHead(426, {
-          'Content-Length': body.length,
-          'Content-Type': 'text/plain'
-        });
-        res.end(body);
-      });
-      this._server.listen(
-        options.port,
-        options.host,
-        options.backlog,
-        callback
-      );
-    } else if (options.server) {
-      this._server = options.server;
-    }
-
-    if (this._server) {
-      this._removeListeners = addListeners(this._server, {
-        listening: this.emit.bind(this, 'listening'),
-        error: this.emit.bind(this, 'error'),
-        upgrade: (req, socket, head) => {
-          this.handleUpgrade(req, socket, head, (ws) => {
-            this.emit('connection', ws, req);
-          });
-        }
-      });
-    }
-
-    if (options.perMessageDeflate === true) options.perMessageDeflate = {};
-    if (options.clientTracking) this.clients = new Set();
-    this.options = options;
-  }
-
-  /**
-   * Returns the bound address, the address family name, and port of the server
-   * as reported by the operating system if listening on an IP socket.
-   * If the server is listening on a pipe or UNIX domain socket, the name is
-   * returned as a string.
-   *
-   * @return {(Object|String|null)} The address of the server
-   * @public
-   */
-  address() {
-    if (this.options.noServer) {
-      throw new Error('The server is operating in "noServer" mode');
-    }
-
-    if (!this._server) return null;
-    return this._server.address();
-  }
-
-  /**
-   * Close the server.
-   *
-   * @param {Function} cb Callback
-   * @public
-   */
-  close(cb) {
-    if (cb) this.once('close', cb);
-
-    //
-    // Terminate all associated clients.
-    //
-    if (this.clients) {
-      for (const client of this.clients) client.terminate();
-    }
-
-    const server = this._server;
-
-    if (server) {
-      this._removeListeners();
-      this._removeListeners = this._server = null;
-
-      //
-      // Close the http server if it was internally created.
-      //
-      if (this.options.port != null) {
-        server.close(() => this.emit('close'));
-        return;
-      }
-    }
-
-    process.nextTick(emitClose, this);
-  }
-
-  /**
-   * See if a given request should be handled by this server instance.
-   *
-   * @param {http.IncomingMessage} req Request object to inspect
-   * @return {Boolean} `true` if the request is valid, else `false`
-   * @public
-   */
-  shouldHandle(req) {
-    if (this.options.path) {
-      const index = req.url.indexOf('?');
-      const pathname = index !== -1 ? req.url.slice(0, index) : req.url;
-
-      if (pathname !== this.options.path) return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * Handle a HTTP Upgrade request.
-   *
-   * @param {http.IncomingMessage} req The request object
-   * @param {net.Socket} socket The network socket between the server and client
-   * @param {Buffer} head The first packet of the upgraded stream
-   * @param {Function} cb Callback
-   * @public
-   */
-  handleUpgrade(req, socket, head, cb) {
-    socket.on('error', socketOnError);
-
-    const key =
-      req.headers['sec-websocket-key'] !== undefined
-        ? req.headers['sec-websocket-key'].trim()
-        : false;
-    const version = +req.headers['sec-websocket-version'];
-    const extensions = {};
-
-    if (
-      req.method !== 'GET' ||
-      req.headers.upgrade.toLowerCase() !== 'websocket' ||
-      !key ||
-      !keyRegex.test(key) ||
-      (version !== 8 && version !== 13) ||
-      !this.shouldHandle(req)
-    ) {
-      return abortHandshake(socket, 400);
-    }
-
-    if (this.options.perMessageDeflate) {
-      const perMessageDeflate = new PerMessageDeflate(
-        this.options.perMessageDeflate,
-        true,
-        this.options.maxPayload
-      );
-
-      try {
-        const offers = parse(req.headers['sec-websocket-extensions']);
-
-        if (offers[PerMessageDeflate.extensionName]) {
-          perMessageDeflate.accept(offers[PerMessageDeflate.extensionName]);
-          extensions[PerMessageDeflate.extensionName] = perMessageDeflate;
-        }
-      } catch (err) {
-        return abortHandshake(socket, 400);
-      }
-    }
-
-    //
-    // Optionally call external client verification handler.
-    //
-    if (this.options.verifyClient) {
-      const info = {
-        origin:
-          req.headers[`${version === 8 ? 'sec-websocket-origin' : 'origin'}`],
-        secure: !!(req.connection.authorized || req.connection.encrypted),
-        req
-      };
-
-      if (this.options.verifyClient.length === 2) {
-        this.options.verifyClient(info, (verified, code, message, headers) => {
-          if (!verified) {
-            return abortHandshake(socket, code || 401, message, headers);
-          }
-
-          this.completeUpgrade(key, extensions, req, socket, head, cb);
-        });
-        return;
-      }
-
-      if (!this.options.verifyClient(info)) return abortHandshake(socket, 401);
-    }
-
-    this.completeUpgrade(key, extensions, req, socket, head, cb);
-  }
-
-  /**
-   * Upgrade the connection to WebSocket.
-   *
-   * @param {String} key The value of the `Sec-WebSocket-Key` header
-   * @param {Object} extensions The accepted extensions
-   * @param {http.IncomingMessage} req The request object
-   * @param {net.Socket} socket The network socket between the server and client
-   * @param {Buffer} head The first packet of the upgraded stream
-   * @param {Function} cb Callback
-   * @throws {Error} If called more than once with the same socket
-   * @private
-   */
-  completeUpgrade(key, extensions, req, socket, head, cb) {
-    //
-    // Destroy the socket if the client has already sent a FIN packet.
-    //
-    if (!socket.readable || !socket.writable) return socket.destroy();
-
-    if (socket[kWebSocket]) {
-      throw new Error(
-        'server.handleUpgrade() was called more than once with the same ' +
-          'socket, possibly due to a misconfiguration'
-      );
-    }
-
-    const digest = createHash('sha1')
-      .update(key + GUID)
-      .digest('base64');
-
-    const headers = [
-      'HTTP/1.1 101 Switching Protocols',
-      'Upgrade: websocket',
-      'Connection: Upgrade',
-      `Sec-WebSocket-Accept: ${digest}`
-    ];
-
-    const ws = new WebSocket(null);
-    let protocol = req.headers['sec-websocket-protocol'];
-
-    if (protocol) {
-      protocol = protocol.trim().split(/ *, */);
-
-      //
-      // Optionally call external protocol selection handler.
-      //
-      if (this.options.handleProtocols) {
-        protocol = this.options.handleProtocols(protocol, req);
-      } else {
-        protocol = protocol[0];
-      }
-
-      if (protocol) {
-        headers.push(`Sec-WebSocket-Protocol: ${protocol}`);
-        ws.protocol = protocol;
-      }
-    }
-
-    if (extensions[PerMessageDeflate.extensionName]) {
-      const params = extensions[PerMessageDeflate.extensionName].params;
-      const value = format({
-        [PerMessageDeflate.extensionName]: [params]
-      });
-      headers.push(`Sec-WebSocket-Extensions: ${value}`);
-      ws._extensions = extensions;
-    }
-
-    //
-    // Allow external modification/inspection of handshake headers.
-    //
-    this.emit('headers', headers, req);
-
-    socket.write(headers.concat('\r\n').join('\r\n'));
-    socket.removeListener('error', socketOnError);
-
-    ws.setSocket(socket, head, this.options.maxPayload);
-
-    if (this.clients) {
-      this.clients.add(ws);
-      ws.on('close', () => this.clients.delete(ws));
-    }
-
-    cb(ws);
-  }
-}
-
-module.exports = WebSocketServer;
-
-/**
- * Add event listeners on an `EventEmitter` using a map of <event, listener>
- * pairs.
- *
- * @param {EventEmitter} server The event emitter
- * @param {Object.<String, Function>} map The listeners to add
- * @return {Function} A function that will remove the added listeners when called
- * @private
- */
-function addListeners(server, map) {
-  for (const event of Object.keys(map)) server.on(event, map[event]);
-
-  return function removeListeners() {
-    for (const event of Object.keys(map)) {
-      server.removeListener(event, map[event]);
-    }
-  };
-}
-
-/**
- * Emit a `'close'` event on an `EventEmitter`.
- *
- * @param {EventEmitter} server The event emitter
- * @private
- */
-function emitClose(server) {
-  server.emit('close');
-}
-
-/**
- * Handle premature socket errors.
- *
- * @private
- */
-function socketOnError() {
-  this.destroy();
-}
-
-/**
- * Close the connection when preconditions are not fulfilled.
- *
- * @param {net.Socket} socket The socket of the upgrade request
- * @param {Number} code The HTTP response status code
- * @param {String} [message] The HTTP response body
- * @param {Object} [headers] Additional HTTP response headers
- * @private
- */
-function abortHandshake(socket, code, message, headers) {
-  if (socket.writable) {
-    message = message || STATUS_CODES[code];
-    headers = {
-      Connection: 'close',
-      'Content-Type': 'text/html',
-      'Content-Length': Buffer.byteLength(message),
-      ...headers
-    };
-
-    socket.write(
-      `HTTP/1.1 ${code} ${STATUS_CODES[code]}\r\n` +
-        Object.keys(headers)
-          .map((h) => `${h}: ${headers[h]}`)
-          .join('\r\n') +
-        '\r\n\r\n' +
-        message
-    );
-  }
-
-  socket.removeListener('error', socketOnError);
-  socket.destroy();
-}
+module.exports = (flag, argv) => {
+	argv = argv || process.argv;
+	const prefix = flag.startsWith('-') ? '' : (flag.length === 1 ? '-' : '--');
+	const pos = argv.indexOf(prefix + flag);
+	const terminatorPos = argv.indexOf('--');
+	return pos !== -1 && (terminatorPos === -1 ? true : pos < terminatorPos);
+};
 
 
 /***/ }),
@@ -24616,6 +24639,145 @@ module.exports = Object.keys || function keys (obj){
     }
   }
   return arr;
+};
+
+
+/***/ }),
+
+/***/ 736:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+const os = __webpack_require__(87);
+const hasFlag = __webpack_require__(613);
+
+const env = process.env;
+
+let forceColor;
+if (hasFlag('no-color') ||
+	hasFlag('no-colors') ||
+	hasFlag('color=false')) {
+	forceColor = false;
+} else if (hasFlag('color') ||
+	hasFlag('colors') ||
+	hasFlag('color=true') ||
+	hasFlag('color=always')) {
+	forceColor = true;
+}
+if ('FORCE_COLOR' in env) {
+	forceColor = env.FORCE_COLOR.length === 0 || parseInt(env.FORCE_COLOR, 10) !== 0;
+}
+
+function translateLevel(level) {
+	if (level === 0) {
+		return false;
+	}
+
+	return {
+		level,
+		hasBasic: true,
+		has256: level >= 2,
+		has16m: level >= 3
+	};
+}
+
+function supportsColor(stream) {
+	if (forceColor === false) {
+		return 0;
+	}
+
+	if (hasFlag('color=16m') ||
+		hasFlag('color=full') ||
+		hasFlag('color=truecolor')) {
+		return 3;
+	}
+
+	if (hasFlag('color=256')) {
+		return 2;
+	}
+
+	if (stream && !stream.isTTY && forceColor !== true) {
+		return 0;
+	}
+
+	const min = forceColor ? 1 : 0;
+
+	if (process.platform === 'win32') {
+		// Node.js 7.5.0 is the first version of Node.js to include a patch to
+		// libuv that enables 256 color output on Windows. Anything earlier and it
+		// won't work. However, here we target Node.js 8 at minimum as it is an LTS
+		// release, and Node.js 7 is not. Windows 10 build 10586 is the first Windows
+		// release that supports 256 colors. Windows 10 build 14931 is the first release
+		// that supports 16m/TrueColor.
+		const osRelease = os.release().split('.');
+		if (
+			Number(process.versions.node.split('.')[0]) >= 8 &&
+			Number(osRelease[0]) >= 10 &&
+			Number(osRelease[2]) >= 10586
+		) {
+			return Number(osRelease[2]) >= 14931 ? 3 : 2;
+		}
+
+		return 1;
+	}
+
+	if ('CI' in env) {
+		if (['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'GITLAB_CI'].some(sign => sign in env) || env.CI_NAME === 'codeship') {
+			return 1;
+		}
+
+		return min;
+	}
+
+	if ('TEAMCITY_VERSION' in env) {
+		return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0;
+	}
+
+	if (env.COLORTERM === 'truecolor') {
+		return 3;
+	}
+
+	if ('TERM_PROGRAM' in env) {
+		const version = parseInt((env.TERM_PROGRAM_VERSION || '').split('.')[0], 10);
+
+		switch (env.TERM_PROGRAM) {
+			case 'iTerm.app':
+				return version >= 3 ? 3 : 2;
+			case 'Apple_Terminal':
+				return 2;
+			// No default
+		}
+	}
+
+	if (/-256(color)?$/i.test(env.TERM)) {
+		return 2;
+	}
+
+	if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
+		return 1;
+	}
+
+	if ('COLORTERM' in env) {
+		return 1;
+	}
+
+	if (env.TERM === 'dumb') {
+		return min;
+	}
+
+	return min;
+}
+
+function getSupportLevel(stream) {
+	const level = supportsColor(stream);
+	return translateLevel(level);
+}
+
+module.exports = {
+	supportsColor: getSupportLevel,
+	stdout: getSupportLevel(process.stdout),
+	stderr: getSupportLevel(process.stderr)
 };
 
 
@@ -28623,7 +28785,7 @@ exports.colors = [6, 2, 3, 4, 5, 1];
 try {
 	// Optional dependency (as in, doesn't need to be installed, NOT like optionalDependencies in package.json)
 	// eslint-disable-next-line import/no-extraneous-dependencies
-	const supportsColor = __webpack_require__(858);
+	const supportsColor = __webpack_require__(736);
 
 	if (supportsColor && (supportsColor.stderr || supportsColor).level >= 2) {
 		exports.colors = [
@@ -29600,14 +29762,6 @@ io.on('connection', (socket) => {
  */
 
 module.exports = __webpack_require__(512)
-
-
-/***/ }),
-
-/***/ 858:
-/***/ (function(module) {
-
-module.exports = eval("require")("supports-color");
 
 
 /***/ }),

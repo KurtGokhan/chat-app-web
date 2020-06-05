@@ -23,8 +23,6 @@ export default function Chat() {
     dispatch({ type: 'markAllMessagesRead' });
 
     const handle = setInterval(() => {
-      console.log('check timeout');
-
       const scroll = scrollRef.current;
       if (!scroll) return;
 
