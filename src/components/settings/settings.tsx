@@ -2,9 +2,15 @@ import React, { useCallback } from 'react';
 import styles from './settings.module.scss';
 import { useGlobalState } from 'src/store/store';
 import { GlobalSettings } from 'src/store/model';
+import { useTranslation, Trans } from 'react-i18next';
 
+/**
+ * The component for settings page.
+ * Various settings for the application can be modified in this page
+ */
 export default function Settings() {
   const [state, dispatch] = useGlobalState();
+  const { t } = useTranslation();
 
   const bindRadio = useCallback((key: keyof GlobalSettings, value: string | boolean) => {
     return {
@@ -16,69 +22,73 @@ export default function Settings() {
   return <div className={styles.settingsContent}>
     <div className="settings-area">
       <section>
-        <label htmlFor="name">User name</label>
+        <label htmlFor="name">{t('User name')}</label>
         <input type="text" id="name" name="name" value={state.settings.name}
           onChange={(e) => dispatch({ type: 'setSettings', value: { name: e.target.value } })} />
       </section>
 
       <section>
-        <label>Interface color</label>
+        <label>{t('Interface color')}</label>
 
         <div>
           <label className="radio">
             <input type="radio" name="theme" {...bindRadio('theme', 'light')} />
-            <span>Light</span>
+            <span>{t('Light')}</span>
           </label>
           <label className="radio">
             <input type="radio" name="theme" {...bindRadio('theme', 'dark')} />
-            <span>Dark</span>
+            <span>{t('Dark')}</span>
           </label>
         </div>
       </section>
 
       <section>
-        <label>Clock display</label>
+        <label>{t('Clock display')}</label>
 
         <div>
           <label className="radio">
             <input type="radio" name="clock" {...bindRadio('clock24Hours', false)} />
-            <span>12 Hours</span>
+            <span>{t('12 Hours')}</span>
           </label>
           <label className="radio">
             <input type="radio" name="clock" {...bindRadio('clock24Hours', true)} />
-            <span>24 Hours</span>
+            <span>{t('24 Hours')}</span>
           </label>
         </div>
       </section>
 
       <section>
-        <label>Send messages on <kbd>CTRL+ENTER</kbd></label>
+        <label>
+          <Trans i18nKey="Send message on CTRL+ENTER">
+            Send messages on <kbd>CTRL+ENTER</kbd>
+          </Trans>
+        </label>
 
         <div>
           <label className="radio">
             <input type="radio" name="send" {...bindRadio('sendOnCtrlEnter', true)} />
-            <span>On</span>
+            <span>{t('On')}</span>
           </label>
           <label className="radio">
             <input type="radio" name="send" {...bindRadio('sendOnCtrlEnter', false)} />
-            <span>Off</span>
+            <span>{t('Off')}</span>
           </label>
         </div>
       </section>
 
       <section>
-        <label htmlFor="language">Language</label>
+        <label htmlFor="language">{t('Language')}</label>
 
         <select name="language" id="language" value={state.settings.language}
           onChange={(e) => dispatch({ type: 'setSettings', value: { language: e.target.value as any } })} >
           <option value="en">English</option>
-          <option value="tr">Turkish</option>
+          <option value="tr">Türkçe</option>
         </select>
       </section>
 
       <div className="settings-spacer" />
 
-      <button onClick={() => dispatch({ type: 'resetSettings' })}>Reset to defaults</button>
+      <button onClick={() => dispatch({ type: 'resetSettings' })}>{t('Reset to defaults')}</button>
     </div>
   </div>;
 }

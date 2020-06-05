@@ -86,6 +86,8 @@
       color: white;
       padding: 12px 20px;
       align-self: center;
+      text-transform: uppercase;
+      font-weight: 500;
 
       &:focus {
         background: scale-color($primary, $lightness: -5%);
@@ -97,12 +99,6 @@
 
       &:active {
         background: scale-color($primary, $lightness: 20%);
-      }
-
-      img {
-        width: 36px;
-        height: 36px;
-        pointer-events: none;
       }
     }
   }

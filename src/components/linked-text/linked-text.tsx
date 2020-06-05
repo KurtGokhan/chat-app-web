@@ -6,6 +6,9 @@ const imageRegex = /.*\.(png|jpg|gif)$/;
 const youtubeRegex = /youtube\.com\/watch\?v=/;
 const youtubeReplacer = /.*watch\?v=(.*)$/;
 
+/**
+ * Renders a string by converting links to anchor tags; youtube and image links to preview
+ */
 export default function LinkedText({ text }: { text: string }) {
   const toRender: React.ReactNode[] = [];
   const media: React.ReactNode[] = [];

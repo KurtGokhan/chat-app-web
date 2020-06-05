@@ -5,9 +5,15 @@ import ChatMessage from '../chat-message/chat-message';
 import { useGlobalState } from 'src/store/store';
 import { sendMessage } from 'src/store/socket';
 import emoticons from 'src/assets/emoticons.json';
+import { useTranslation } from 'react-i18next';
 
+/**
+ * The component for chat page.
+ * It shows the chat message stream and allows messages to be sent
+ */
 export default function Chat() {
   const [state, dispatch] = useGlobalState();
+  const { t } = useTranslation();
 
   const textRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -56,7 +62,7 @@ export default function Chat() {
       sendMessage(msg);
 
       textRef.current.value = '';
-      scrollToBottom();
+      setTimeout(scrollToBottom, 100);
     }
 
     textRef.current.focus();
@@ -105,7 +111,7 @@ export default function Chat() {
     </div>
 
     <div className={styles.chatInputSection}>
-      <textarea placeholder="Enter message" rows={1} onInput={onInput} ref={textRef} onSubmit={onSubmit} onKeyDown={onKey} autoFocus />
+      <textarea placeholder={t('Enter message')} rows={1} onInput={onInput} ref={textRef} onSubmit={onSubmit} onKeyDown={onKey} autoFocus />
 
       <button onClick={onSubmit}>
         <img src={sendIcon} alt="Send" />
