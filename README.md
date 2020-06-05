@@ -1,5 +1,7 @@
 # Chat App Web
 
+This is a live Chat application demo built in React using hooks, function components and Context API.
+
 ## Commands
 
 To build and run the app end-to-end, run the following command and open http://localhost:4000
@@ -23,6 +25,7 @@ Start command runs the front-end server on http://localhost:3000 in development 
 Following technologies are used in the application:
 
 - Typescript
+- SCSS
 - React (hooks and function components)
 - React Context API
 - React Router
@@ -70,7 +73,7 @@ It works in all modern browsers with subtle differences.
   - When it's on, pressing <kbd>enter</kbd> will add a newline and <kbd>ctrl+enter</kbd> will send the message
   - When it's off, pressing <kbd>enter</kbd> or <kbd>ctrl+enter</kbd> will send the message
   - Pressing <kbd>shift+enter</kbd> will add a newline regardless of whether it's on or off
-- App is not stress tested. Too many messages will probably slow down the app.
+- App is not stress tested. Too many messages will probably slow down the app. Also it does not do error handling.
 - I did not add extra features. Instead I focused on making sure existing features has good design and UX. Many other improvements can be made to make this a real chat application. I decided to keep it minimal.
 
 

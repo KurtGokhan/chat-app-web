@@ -10,26 +10,26 @@ export enum Language {
 }
 
 export interface Message {
-  user: string;
-  message: string;
-  date: number;
-  self?: boolean;
+  readonly user: string;
+  readonly message: string;
+  readonly date: number;
+  readonly self?: boolean;
 }
 
 export interface GlobalSettings {
-  name: string,
-  theme: Theme,
-  clock24Hours: boolean,
-  sendOnCtrlEnter: boolean,
-  language: Language,
+  readonly name: string,
+  readonly theme: Theme,
+  readonly clock24Hours: boolean,
+  readonly sendOnCtrlEnter: boolean,
+  readonly language: Language,
 }
 
 export interface GlobalState {
-  messages: {
-    list: Message[],
-    unreadMessageCount: number,
+  readonly messages: {
+    readonly list: Message[],
+    readonly unreadMessageCount: number,
   },
-  settings: GlobalSettings,
+  readonly settings: GlobalSettings,
 }
 
 
