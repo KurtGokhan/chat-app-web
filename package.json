@@ -12,6 +12,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:cover": "react-scripts test -- --coverage",
     "lint": "eslint src/*",
     "serve": "node server.js"
   },

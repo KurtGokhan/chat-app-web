@@ -15,8 +15,9 @@ export default function LinkedText({ text }: { text: string }) {
 
   let toParse = text;
   const links = anchorme.list(text);
-
   let prevLink: ListingProps = null as any;
+
+  // Traverse the links to generate the text and media to be rendered
   for (const link of links) {
     const prevText = text.substring(prevLink?.end || 0, link.start);
     const nextText = text.substring(link.end);
@@ -34,20 +35,20 @@ export default function LinkedText({ text }: { text: string }) {
       if (!href.startsWith('http')) {
         href = `//${href}`;
       }
+
+      if (imageRegex.test(href)) {
+        media.push(<img key={media.length} src={href} alt={href} />);
+      } else if (youtubeRegex.test(href)) {
+        media.push(<div className="video-container" key={media.length} >
+          <iframe src={`https://www.youtube.com/embed/${href.replace(youtubeReplacer, '$1')}`} title="Youtube"
+            frameBorder={0} allowFullScreen allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" />
+        </div>);
+      }
     } else if (link.isEmail) {
       href = `mailto:${href}`;
     }
 
     toRender.push(<a href={href} key={key} rel="noopener noreferrer" target="_blank">{link.string}</a>);
-
-    if (imageRegex.test(href)) {
-      media.push(<img key={media.length} src={href} alt={href} />);
-    } else if (youtubeRegex.test(href)) {
-      media.push(<div className="video-container" key={media.length} >
-        <iframe src={`https://www.youtube.com/embed/${href.replace(youtubeReplacer, '$1')}`} title="Youtube"
-          frameBorder={0} allowFullScreen allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" />
-      </div>);
-    }
   }
 
   if (toParse) toRender.push(toParse);

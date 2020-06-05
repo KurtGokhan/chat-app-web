@@ -16,10 +16,13 @@ Following commands are available for development:
   npm run start
   npm run build
   npm run test
+  npm run test:cover
   npm run lint
 ```
 
 Start command runs the front-end server on http://localhost:3000 in development mode.
+
+There are some unit tests for components with complex logic.
 
 ## Technology
 

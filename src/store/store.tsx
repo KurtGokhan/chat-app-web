@@ -9,7 +9,7 @@ const generateRandomName = () => {
   return `guest${randomNumber}`
 };
 
-const initialSettings: GlobalSettings = {
+export const initialSettings: GlobalSettings = {
   name: generateRandomName(),
   theme: Theme.Light,
   clock24Hours: false,
@@ -17,7 +17,7 @@ const initialSettings: GlobalSettings = {
   sendOnCtrlEnter: false,
 };
 
-const initialState: GlobalState = {
+export const initialState: GlobalState = {
   messages: {
     list: [],
     unreadMessageCount: 0,
@@ -27,7 +27,7 @@ const initialState: GlobalState = {
 
 
 
-const reducer = (state: GlobalState, action: Action) => {
+export const reducer = (state: GlobalState, action: Action) => {
   switch (action.type) {
     case 'resetSettings': return { ...state, settings: initialSettings };
     case 'setSettings': return { ...state, settings: { ...state.settings, ...action.value } };
@@ -46,7 +46,7 @@ const reducer = (state: GlobalState, action: Action) => {
 };
 
 
-const StateContext = createContext<[GlobalState, React.Dispatch<Action>]>([initialState, () => null]);
+export const StateContext = createContext<[GlobalState, React.Dispatch<Action>]>([initialState, () => null]);
 
 /**
  * Wrapper component for providing the global state context to children

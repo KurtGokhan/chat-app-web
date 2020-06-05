@@ -12,6 +12,7 @@ export default function Settings() {
   const [state, dispatch] = useGlobalState();
   const { t } = useTranslation();
 
+  /** A helper function to set checked state and bind onChange of radio input */
   const bindRadio = useCallback((key: keyof GlobalSettings, value: string | boolean) => {
     return {
       checked: state.settings[key] === value,
