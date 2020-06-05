@@ -62,7 +62,6 @@ $bubbleBgDark: #3a3d4a;
       height: 0;
       width: 60vw;
       max-width: 1920px;
-      min-width: 300px;
 
       iframe {
         position: absolute;
@@ -89,7 +88,7 @@ $bubbleBgDark: #3a3d4a;
     transform: skew(45deg);
   }
 
-  :global(.app-root.dark) & {
+  @include darkMode {
     .bubble-arrow,
     .bubble {
       background: $bubbleBgDark;

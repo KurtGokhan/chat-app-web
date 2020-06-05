@@ -1,8 +1,4 @@
-$st1: #dcdcdc;
-$st2: #d6d6d6;
-
-$dst1: #232935;
-$dst2: #252c38;
+@import "src/styles/variables";
 
 .chatContent {
   flex: 1 1 0;
@@ -20,19 +16,17 @@ $dst2: #252c38;
 
   box-shadow: 0px 1px 5px -2px black inset;
 
-  background: #dcdcdc;
-  background: linear-gradient(45deg, $st1 25%, $st2 25%, $st2 50%, $st1 50%, $st1 75%, $st2 75%);
-  background-size: 50px 50px;
+  background-color: #dcdcdc;
+  @include stripes(#dcdcdc, #d6d6d6, 50px);
 
   ul {
     margin: 0;
     padding: 0;
   }
 
-  :global(.app-root.dark) & {
-    background: #232935;
-    background: linear-gradient(45deg, $dst1 25%, $dst2 25%, $dst2 50%, $dst1 50%, $dst1 75%, $dst2 75%);
-    background-size: 50px 50px;
+  @include darkMode {
+    background-color: #232935;
+    @include stripes(#232935, #252c38, 50px);
   }
 }
 
@@ -46,7 +40,7 @@ $dst2: #252c38;
   border-top: 1px solid transparent;
   background: #e7e7e7;
 
-  :global(.app-root.dark) & {
+  @include darkMode {
     background: #232935;
   }
 
@@ -102,7 +96,7 @@ $dst2: #252c38;
       pointer-events: none;
       vertical-align: middle;
 
-      :global(.app-root.dark) & {
+      @include darkMode {
         filter: invert(1) drop-shadow(2px 4px 4px black);
       }
     }
