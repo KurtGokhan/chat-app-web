@@ -1,5 +1,14 @@
 @import "src/styles/variables";
 
+@keyframes :global(blink) {
+  from {
+    background-color: #40424e;
+  }
+  to {
+    background-color: #af4364;
+  }
+}
+
 .nav :global {
   background: #3a3d4a;
   box-shadow: 0 2px 6px -2px black;
@@ -50,6 +59,10 @@
       line-height: 20px;
       position: absolute;
       left: 20px;
+    }
+
+    &.blinking:not(.active) {
+      animation: blink 0.7s alternate ease-in-out infinite;
     }
   }
 

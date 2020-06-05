@@ -14,8 +14,9 @@ Following commands are available for development:
   npm run start
   npm run build
   npm run test
-  npm run serve
 ```
+
+Start command runs the front-end server on http://localhost:3000 in development mode.
 
 ## Technology
 
@@ -75,6 +76,8 @@ It works in all modern browsers with subtle differences.
 
 ## Server
 
-The server is a very small application that relays the incoming messages to all connected users. It serves static files in `build` directory and it has a socket.io endpoint.
+Server can be run with the command `npm run serve`
+
+Server is a very small application that relays the incoming messages to all connected users. It serves static files in `build` directory and it has a socket.io endpoint.
 
 It is prebuilt into `server.js` for convenience. Its source code can be seen in [server directory](https://github.com/KurtGokhan/chat-app-web/tree/master/server).

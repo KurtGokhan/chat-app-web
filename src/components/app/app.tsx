@@ -20,7 +20,7 @@ export default function App() {
     <Router>
       <div className={cx(styles.app, 'app-root', theme)}>
         <nav className={styles.nav}>
-          <NavLink activeClassName="active" exact to="/" >
+          <NavLink activeClassName="active" exact to="/" className={cx({ blinking: unreadMessageCount > 0 })}>
             {t('Chat')}
             {unreadMessageCount > 0 && <span className="notification">{unreadMessageCount}</span>}
           </NavLink>
