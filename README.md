@@ -71,7 +71,7 @@ It works in all modern browsers with subtle differences.
 
 ## Known issues
 
-- There is a scrolling bug in IE11 and Firefox.
+- There is a scrolling bug in IE11 and not all browsers handle scrolling the same way.
 - I did not understand what `Unread chat notifications` feature means and skipped it.
 - `Send on CTRL+Enter` works like this: 
   - When it's on, pressing <kbd>enter</kbd> will add a newline and <kbd>ctrl+enter</kbd> will send the message

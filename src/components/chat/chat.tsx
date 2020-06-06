@@ -8,6 +8,17 @@ import emoticons from 'src/assets/emoticons.json';
 import { useTranslation } from 'react-i18next';
 
 /**
+ * Check if a child element is in bounds of another element, i.e. in scrolling bounds
+ */
+function visibleInParent(child: HTMLElement, parent: HTMLElement) {
+  const r = child.getBoundingClientRect();
+  const p = parent.getBoundingClientRect();
+
+  return (r.bottom <= p.bottom && r.right <= p.right
+    && r.top >= p.top && r.left >= p.left);
+}
+
+/**
  * The component for chat page.
  * It shows the chat message stream and allows messages to be sent
  */
@@ -17,31 +28,20 @@ export default function Chat() {
 
   const textRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
 
-  useEffect(() => {
-    dispatch({ type: 'markAllMessagesRead' });
-
-    const handle = setInterval(() => {
-      const scroll = scrollRef.current;
-      if (!scroll) return;
-
-      if ((scroll.scrollTop + scroll.offsetHeight + 20) >= scroll.scrollHeight) {
-        dispatch({ type: 'markAllMessagesRead' });
-      }
-    }, 3000);
-
-    return () => clearInterval(handle);
-  }, [dispatch, scrollRef]);
-
-
+  /** Scrolls the chat content to bottom */
   const scrollToBottom = useCallback(() => {
     const scroll = scrollRef.current;
-    if (!scroll) return;
+    const list = listRef.current;
 
-    scroll.scrollTo(0, scroll.scrollHeight);
-  }, [scrollRef]);
+    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [scrollRef, listRef]);
 
+
+  /** Automatically adjusts the textarea size */
   const resetTextareaSize = useCallback(() => {
     const element = textRef.current;
     if (!element) return;
@@ -50,6 +50,7 @@ export default function Chat() {
   }, [textRef]);
 
 
+  /** Submit the message through socket */
   const onSubmit = useCallback(() => {
     if (!textRef.current) return;
 
@@ -68,6 +69,7 @@ export default function Chat() {
   }, [state, textRef, dispatch, resetTextareaSize, scrollToBottom]);
 
 
+  /** Replace smileys with emojis and automatically adjust the textarea size */
   const onInput = useCallback(() => {
     if (!textRef.current) return;
 
@@ -82,6 +84,7 @@ export default function Chat() {
   }, [textRef, resetTextareaSize]);
 
 
+  /** Check if enter or ctrl+enter is pressed and submit the message */
   const onKey = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const isEnter = event.keyCode === 13;
     if (!isEnter) return;
@@ -99,9 +102,33 @@ export default function Chat() {
   }, [state, onSubmit]);
 
 
+  // Check if scrolled to bottom and clear unread messages regularly
+  useEffect(() => {
+    const handle = setInterval(() => {
+      if (!state.messages.unreadMessageCount) return;
+
+      const scroll = scrollRef.current;
+      const lastMessage = listRef.current?.lastChild as HTMLElement;
+
+      if (lastMessage && scroll && visibleInParent(lastMessage, scroll)) {
+        dispatch({ type: 'markAllMessagesRead' });
+      }
+    }, 3000);
+
+    return () => clearInterval(handle);
+  }, [dispatch, scrollRef, listRef, state.messages.unreadMessageCount]);
+
+
+  // Scroll to bottom on page open
+  useEffect(() => {
+    dispatch({ type: 'markAllMessagesRead' });
+    scrollToBottom();
+  }, [scrollToBottom, dispatch]);
+
+
   return <>
     <div className={styles.chatContent} ref={scrollRef}>
-      <ul>
+      <ul ref={listRef}>
         {state.messages.list.map((x, i) =>
           <ChatMessage message={x} key={i}></ChatMessage>
         )}

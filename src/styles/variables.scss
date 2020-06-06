@@ -23,3 +23,10 @@ $accent: #0075ff;
   );
   background-size: $size $size;
 }
+
+// A mixin that applies styles only for firefox
+@mixin firefoxOnly {
+  @-moz-document url-prefix() {
+    @content;
+  }
+}
