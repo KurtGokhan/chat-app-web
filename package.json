@@ -12,7 +12,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "test:cover": "react-scripts test -- --coverage",
+    "test:cover": "react-scripts test --coverage --watchAll",
     "lint": "eslint src/*",
     "serve": "node server.js"
   },
